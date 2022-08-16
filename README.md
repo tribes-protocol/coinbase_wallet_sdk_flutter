@@ -1,15 +1,45 @@
 # coinbase_wallet_sdk_flutter
 
-A new Flutter plugin project.
+A flutter wrapper for CoinbaseWallet mobile SDK
+
+Note: This wrapper only supports iOS and Android.
 
 ## Getting Started
 
-This project is a starting point for a Flutter
-[plug-in package](https://flutter.dev/developing-packages/),
-a specialized package that includes platform-specific implementation code for
-Android and/or iOS.
+```dart 
+  import 'package:coinbase_wallet_sdk_flutter/coinbase_wallet_sdk.dart';
+  
+  
+  // Configure SDK for each platform
+  await CoinbaseWalletSDK.shared.configure(
+    Configuration(
+      ios: IOSConfiguration(
+        host: Uri.parse('cbwallet://wsegue'),
+        callback: Uri.parse('tribesxyz://mycallback'),
+      ),
+      android: AndroidConfiguration(
+        domain: Uri.parse('https://www.coinbase.com'),
+      ),
+    ),
+  );
+    
+  // To call web3's eth_requestAccounts
+  final response = await CoinbaseWalletSDK.shared.initiateHandshake([
+    const RequestAccounts(),
+  ]);
+  
+  final walletAddress = response[0].value;
 
-For help getting started with Flutter development, view the
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+  // to call web3's personalSign
+  final response = await CoinbaseWalletSDK.shared.makeRequest(
+    Request(
+      actions: [
+        PersonalSign(address: address.value, message: message),
+      ],
+    ),
+  );
+  
+  final signature = response[0].value;
+```
+
 
