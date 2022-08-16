@@ -28,9 +28,11 @@ class _MyAppState extends State<MyApp> {
       Configuration(
         ios: IOSConfiguration(
           host: Uri.parse('cbwallet://wsegue'),
-          callback: Uri.parse('tribesxyz://mycallback'),
+          callback: Uri.parse('tribesxyzsample://mycallback'),
         ),
-        android: null,
+        android: AndroidConfiguration(
+          domain: Uri.parse('https://www.coinbase.com'),
+        ),
       ),
     );
     super.initState();

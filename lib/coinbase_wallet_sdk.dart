@@ -37,7 +37,7 @@ class CoinbaseWalletSDK {
         .call('initiateHandshake', jsonEncode(actionsJson));
 
     return (result ?? [])
-        .map((action) => ReturnValue.fromJson(action['result']))
+        .map((action) => ReturnValue.fromJson(action))
         .cast<ReturnValue>()
         .toList();
   }
@@ -48,7 +48,7 @@ class CoinbaseWalletSDK {
         .call('makeRequest', jsonEncode(request.toJson()));
 
     return (result ?? [])
-        .map((action) => ReturnValue.fromJson(action['result']))
+        .map((action) => ReturnValue.fromJson(action))
         .cast<ReturnValue>()
         .toList();
   }

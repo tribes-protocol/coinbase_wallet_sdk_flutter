@@ -1,11 +1,16 @@
 package xyz.tribes.coinbase.coinbase_wallet_sdk_flutter
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.annotation.NonNull
 import com.coinbase.android.nativesdk.CoinbaseWalletSDK
-import com.coinbase.android.nativesdk.message.request.Web3JsonRPC
+import com.coinbase.android.nativesdk.message.request.Action
+import com.coinbase.android.nativesdk.message.request.RequestContent
+import com.coinbase.android.nativesdk.message.response.ResponseResult
 import com.coinbase.android.nativesdk.message.response.ReturnValue
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
@@ -27,9 +32,16 @@ class CoinbaseWalletSdkFlutterPlugin : FlutterPlugin, MethodCallHandler,
 
     private lateinit var coinbase: CoinbaseWalletSDK
 
+    private lateinit var flutterApplicationContext: Context
+
     private var act: android.app.Activity? = null
 
+    private val gson = Gson()
+
+    private val successJson = "{ \"success\": true}"
+
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+        flutterApplicationContext = flutterPluginBinding.applicationContext
         coinbase = CoinbaseWalletSDK(
             appContext = flutterPluginBinding.applicationContext,
             domain = Uri.parse("https://www.coinbase.com"),
@@ -40,43 +52,96 @@ class CoinbaseWalletSdkFlutterPlugin : FlutterPlugin, MethodCallHandler,
     }
 
     override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
-        if (call.method == "getPlatformVersion") {
-            result.success("Android ${android.os.Build.VERSION.RELEASE}")
-        } else if (call.method == "initiateHandshake") {
-            initiateHandshake(result)
-        } else {
-            result.notImplemented()
+        try {
+            if (call.method == "configure") {
+                return configure(call, result)
+            }
+
+            if (call.method == "initiateHandshake") {
+                return initiateHandshake(call, result)
+            }
+
+            if (call.method == "makeRequest") {
+                return makeRequest(call, result)
+            }
+
+            if (call.method == "resetSession") {
+                return resetSession(call, result)
+            }
+        } catch (e: Throwable) {
+            result.error("onMethodCall", e.message, null)
         }
+
+        result.notImplemented()
+    }
+
+    private fun configure(@NonNull call: MethodCall, @NonNull result: Result) {
+        val args = call.arguments
+        if (args !is Map<*, *>) {
+            return result.error("configure", "Missing arguments", null)
+        }
+
+        val domain = args["domain"] as String
+        coinbase = CoinbaseWalletSDK(
+            appContext = flutterApplicationContext,
+            domain = Uri.parse(domain),
+            openIntent = { intent -> act?.startActivityForResult(intent, 0) }
+        );
+
+        result.success(successJson)
+    }
+
+    private fun initiateHandshake(@NonNull call: MethodCall, @NonNull result: Result) {
+        val jsonString = call.arguments
+        if (jsonString !is String) {
+            return result.error("initiateHandshake", "Missing args", null)
+        }
+
+        val arrayTutorialType = object : TypeToken<List<Action>>() {}.type
+        val actions: List<Action> = gson.fromJson(jsonString, arrayTutorialType)
+
+        coinbase.initiateHandshake(initialActions = actions) { responseResult ->
+            handleResponse("initiateHandshake", responseResult, result)
+        }
+    }
+
+    private fun makeRequest(@NonNull call: MethodCall, @NonNull result: Result) {
+        val jsonString = call.arguments
+        if (jsonString !is String) {
+            return result.error("makeRequest", "Missing args", null)
+        }
+
+        val request: RequestContent.Request = gson.fromJson(jsonString, RequestContent.Request::class.java)
+        coinbase.makeRequest(request) { responseResult ->
+            handleResponse("makeRequest", responseResult, result)
+        }
+    }
+
+    private fun resetSession(@NonNull call: MethodCall, @NonNull result: Result) {
+        coinbase.resetSession()
+        result.success(successJson)
+    }
+
+    private fun handleResponse(code: String, responseResult: ResponseResult, result: Result) {
+        if (responseResult.isFailure) {
+            return result.error(code, responseResult.exceptionOrNull()?.message, null)
+        }
+        val returnValues = responseResult.getOrNull() ?: emptyList();
+
+        var toFlutter = mutableListOf<Map<String, Any>>();
+        returnValues.forEach {
+            when (it) {
+                is ReturnValue.Result -> toFlutter.add(mapOf("result" to mapOf("value" to it.value)))
+                is ReturnValue.Error -> toFlutter.add(mapOf("error" to mapOf("code" to it.code, "message" to it.message)))
+            }
+        }
+        val jsonString = gson.toJson(toFlutter)
+        result.success(jsonString)
+
     }
 
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
-    }
-
-    private fun initiateHandshake(@NonNull callback: Result) {
-        val requestAccount = Web3JsonRPC.RequestAccounts().action()
-
-        coinbase.initiateHandshake(initialActions = listOf(requestAccount)) { result: kotlin.Result<List<ReturnValue>> ->
-
-            if (result.isFailure) {
-                println("hish: error ${result.exceptionOrNull()}")
-                return@initiateHandshake
-            }
-            val returnValues = result.getOrNull() ?: emptyList();
-            if (returnValues.isEmpty()) {
-                println("hish: missing return values")
-                return@initiateHandshake
-            }
-
-            when (val requestAccountResult = returnValues[0]) {
-                is Result -> {
-                    println("hish: address ${requestAccountResult}");
-                }
-                is Error -> {
-                    println("hish: error ${requestAccountResult}")
-                }
-            }
-        }
     }
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {

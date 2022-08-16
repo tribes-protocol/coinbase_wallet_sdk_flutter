@@ -38,7 +38,7 @@ public class SwiftCoinbaseWalletSdkFlutterPlugin: NSObject, FlutterPlugin {
         result(FlutterMethodNotImplemented)
     }
     
-    func configure(call: FlutterMethodCall, result: @escaping FlutterResult) {
+    private func configure(call: FlutterMethodCall, result: @escaping FlutterResult) {
         guard
             let args = call.arguments as? [String: Any],
             let host = args["host"] as? String,
@@ -54,7 +54,7 @@ public class SwiftCoinbaseWalletSdkFlutterPlugin: NSObject, FlutterPlugin {
         result(SwiftCoinbaseWalletSdkFlutterPlugin.success)
     }
     
-    func initiateHandshake(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
+    private func initiateHandshake(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
         var actions = [Action]()
         
         if let args = call.arguments as? String, let jsonData = args.data(using: .utf8) {
@@ -66,7 +66,7 @@ public class SwiftCoinbaseWalletSdkFlutterPlugin: NSObject, FlutterPlugin {
         }
     }
     
-    func makeRequest(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
+    private func makeRequest(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
         guard
             let args = call.arguments as? String,
             let jsonData = args.data(using: .utf8)
@@ -82,7 +82,7 @@ public class SwiftCoinbaseWalletSdkFlutterPlugin: NSObject, FlutterPlugin {
         }
     }
     
-    func resetSession(call: FlutterMethodCall, result: @escaping FlutterResult) {
+    private func resetSession(call: FlutterMethodCall, result: @escaping FlutterResult) {
         let responseResult = CoinbaseWalletSDK.shared.resetSession()
         
         switch responseResult {
@@ -97,8 +97,19 @@ public class SwiftCoinbaseWalletSdkFlutterPlugin: NSObject, FlutterPlugin {
         do {
             switch responseResult {
             case .success(let returnValues):
-                let data = try JSONEncoder().encode(returnValues.content)
-                let jsonString = String(data:data, encoding: .utf8)!
+                var toFlutter = [[String: Any]]()
+                returnValues.content.forEach { it in
+                    switch it {
+                    case .result(let value):
+                        toFlutter.append(["result": ["value": value]])
+                    case .error(let code, let message):
+                        toFlutter.append(["error": ["code": code, "message": message]])
+                    }
+                }
+                
+                let data = try JSONSerialization.data(withJSONObject: toFlutter, options: [])
+                let jsonString = String(data: data, encoding: .utf8)!
+                
                 result(jsonString)
             case .failure(let error):
                 result(FlutterError(code: code, message: error.localizedDescription, details: nil))
