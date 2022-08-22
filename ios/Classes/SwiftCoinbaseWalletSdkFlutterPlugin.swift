@@ -30,12 +30,20 @@ public class SwiftCoinbaseWalletSdkFlutterPlugin: NSObject, FlutterPlugin {
             if (call.method == "resetSession") {
                 return resetSession(call: call, result: result)
             }
+
+            if (call.method == "isAppInstalled") {
+                return isAppInstalled(result: result)
+            }
         } catch {
             result(FlutterError(code: "handle", message: error.localizedDescription, details: nil))
             return
         }
         
         result(FlutterMethodNotImplemented)
+    }
+
+    private func isAppInstalled(result: @escaping FlutterResult) {
+        result(CoinbaseWalletSDK.isCoinbaseWalletInstalled())
     }
     
     private func configure(call: FlutterMethodCall, result: @escaping FlutterResult) {

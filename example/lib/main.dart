@@ -109,6 +109,14 @@ class _MyAppState extends State<MyApp> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              FutureBuilder<bool>(
+                future: CoinbaseWalletSDK.shared.isAppInstalled(),
+                builder: ((context, snapshot) {
+                  return Text(
+                    'Is installed? ${snapshot.data}',
+                  );
+                }),
+              ),
               TextButton(
                 onPressed: () => _requestAccount(),
                 child: const Text("Request Account"),

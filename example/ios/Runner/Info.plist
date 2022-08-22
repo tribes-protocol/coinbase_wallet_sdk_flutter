@@ -45,6 +45,10 @@
 	<false/>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+  <key>LSApplicationQueriesSchemes</key>
+  <array>
+    <string>cbwallet</string>
+  </array>
   <key>CFBundleURLTypes</key>
   <array>
       <dict>

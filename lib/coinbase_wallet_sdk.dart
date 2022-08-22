@@ -58,6 +58,13 @@ class CoinbaseWalletSDK {
     await CoinbaseWalletSdkFlutterPlatform.instance.call('resetSession');
   }
 
+  /// Check whether CoinbaseWallet app is installed
+  Future<bool> isAppInstalled() async {
+    final result = await CoinbaseWalletSdkFlutterPlatform.instance
+        .call('isAppInstalled');
+    return result ?? false;
+  }
+
   // private helper methods
 
   Future<void> _configureIOS(IOSConfiguration? configuration) async {

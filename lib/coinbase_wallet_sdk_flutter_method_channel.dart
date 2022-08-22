@@ -14,7 +14,11 @@ class MethodChannelCoinbaseWalletSdkFlutter
 
   @override
   Future<dynamic> call(String method, [arguments]) async {
-    final result = await methodChannel.invokeMethod<String>(method, arguments);
-    return result != null ? jsonDecode(result) : null;
+    final result = await methodChannel.invokeMethod<dynamic>(method, arguments);
+    if (result is bool) {
+      return result;
+    }
+
+    return result != null ? jsonDecode(result as String) : null;
   }
 }

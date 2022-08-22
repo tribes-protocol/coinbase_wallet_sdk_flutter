@@ -68,11 +68,19 @@ class CoinbaseWalletSdkFlutterPlugin : FlutterPlugin, MethodCallHandler,
             if (call.method == "resetSession") {
                 return resetSession(call, result)
             }
+
+            if (call.method == "isAppInstalled") {
+                return isAppInstalled(result)
+            }
         } catch (e: Throwable) {
             result.error("onMethodCall", e.message, null)
         }
 
         result.notImplemented()
+    }
+
+    private fun isAppInstalled(@NonNull result: Result) {
+        result.success(coinbase.isWalletInstalled)
     }
 
     private fun configure(@NonNull call: MethodCall, @NonNull result: Result) {
